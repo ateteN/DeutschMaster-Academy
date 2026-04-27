@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeutschMaster — Admin</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #0f1f3d;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle background pattern */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(212,160,23,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(26,58,107,0.4) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 360px;
+      backdrop-filter: blur(12px);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      font-family: 'Lora', serif;
+      font-size: 22px;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .logo span { color: #D4A017; }
+
+    .admin-badge {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 6px;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: #fff;
+      outline: none;
+      transition: border 0.15s;
+    }
+    input[type="email"]::placeholder { color: rgba(255,255,255,0.25); }
+    input[type="email"]:focus { border-color: rgba(212,160,23,0.5); }
+
+    .btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 13px;
+      background: #D4A017;
+      color: #0f1f3d;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: none;
+      text-align: center;
+    }
+    .status.success {
+      background: rgba(151,196,89,0.12);
+      border: 1px solid rgba(151,196,89,0.25);
+      color: #a8d97a;
+      display: block;
+    }
+    .status.error {
+      background: rgba(240,149,149,0.1);
+      border: 1px solid rgba(240,149,149,0.2);
+      color: #f09595;
+      display: block;
+    }
+
+    .hint {
+      margin-top: 20px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Deutsch<span>Master</span></div>
+  <div class="admin-badge">Admin Access</div>
+
+  <label>Email</label>
+  <input type="email" id="email" placeholder="atetenorette23@gmail.com" autofocus/>
+
+  <label style="margin-top: 14px;">Password</label>
+  <input type="password" id="password" placeholder="••••••••"/>
+
+  <button class="btn" id="btn" onclick="signIn()">Sign in</button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  const SUPABASE_URL      = 'https://wfxbwkmvvjriewunovdr.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_31eJMfA-x1NC6lIuYn4_EA_r02ZnTIK';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const ADMIN_EMAIL = 'atetenorette23@gmail.com';
+
+  // If already logged in, go straight to dashboard
+  db.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user?.email === ADMIN_EMAIL) {
+      window.location.href = 'admin-dashboard.html';
+    }
+  });
+
+  async function signIn() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('btn');
+    const status   = document.getElementById('status');
+
+    if (!email || !password) {
+      status.className = 'status error';
+      status.textContent = 'Please enter your email and password.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    status.className = 'status';
+
+    const { error } = await db.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      status.className = 'status error';
+      status.textContent = 'Wrong email or password.';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    } else if (email !== ADMIN_EMAIL) {
+      await db.auth.signOut();
+      status.className = 'status error';
+      status.textContent = 'Unauthorised.';
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    } else {
+      window.location.href = 'admin-dashboard.html';
+    }
+  }
+
+  // Allow pressing Enter
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') signIn();
+  });
+</script>
+</body>
+</html>

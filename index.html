@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeutschMaster — Payment Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Playfair+Display:wght@700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #F8F7F4; color: #1C1C1E; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: #fff; border-radius: 16px; border: 1px solid rgba(26,58,107,0.1); padding: 2rem; width: 100%; max-width: 440px; }
+    .logo { font-family: 'Playfair Display', serif; font-size: 22px; color: #1A3A6B; margin-bottom: 4px; }
+    .logo span { color: #D4A017; }
+    .subtitle { font-size: 13px; color: #6B7280; margin-bottom: 1.75rem; }
+    label { font-size: 13px; color: #6B7280; display: block; margin-bottom: 4px; margin-top: 14px; }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(26,58,107,0.15); font-size: 14px; font-family: 'DM Sans', sans-serif; background: #FAFAFA; color: #1C1C1E; outline: none; transition: border 0.15s; }
+    input:focus, select:focus { border-color: #1A3A6B; background: #fff; }
+    .plans { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .plan { border: 1.5px solid rgba(26,58,107,0.15); border-radius: 10px; padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; }
+    .plan:hover, .plan.active { border-color: #1A3A6B; background: #F0F4FA; }
+    .plan .price { font-size: 15px; font-weight: 500; color: #1A3A6B; }
+    .plan .name { font-size: 11px; color: #6B7280; margin-top: 2px; }
+    .plan .save { font-size: 10px; color: #D4A017; font-weight: 500; margin-top: 2px; }
+    .btn { width: 100%; margin-top: 1.5rem; padding: 13px; background: #1A3A6B; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.15s; }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status-box { margin-top: 1.25rem; padding: 14px 16px; border-radius: 10px; font-size: 13px; line-height: 1.7; display: none; }
+    .status-box.pending  { background: #FAEEDA; color: #633806; border: 1px solid #EF9F27; }
+    .status-box.success  { background: #EAF3DE; color: #1B5E20; border: 1px solid #97C459; }
+    .status-box.failed   { background: #FCEBEB; color: #7F0000; border: 1px solid #F09595; }
+    .status-box.error    { background: #FCEBEB; color: #7F0000; border: 1px solid #F09595; }
+    .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #D4A017; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .test-note { font-size: 12px; color: #6B7280; background: #F0F4FA; border-radius: 8px; padding: 10px 12px; margin-top: 1rem; line-height: 1.6; }
+    .test-note strong { color: #1A3A6B; }
+    .divider { border: none; border-top: 1px solid rgba(26,58,107,0.08); margin: 1.25rem 0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Deutsch<span>Master</span></div>
+  <p class="subtitle">MTN MoMo payment test — sandbox mode</p>
+
+  <label>Full name</label>
+  <input type="text" id="name" placeholder="e.g. Amina Uwase"/>
+
+  <label>Email address</label>
+  <input type="email" id="email" placeholder="e.g. amina@example.com"/>
+
+  <label>MTN MoMo phone number</label>
+  <input type="tel" id="phone" placeholder="e.g. 0781234567"/>
+
+  <label>Choose a plan</label>
+  <div class="plans">
+    <div class="plan active" onclick="selectPlan('monthly',this)">
+      <div class="price">8,000</div>
+      <div class="name">Monthly</div>
+      <div class="save">RWF</div>
+    </div>
+    <div class="plan" onclick="selectPlan('quarterly',this)">
+      <div class="price">20,000</div>
+      <div class="name">3 months</div>
+      <div class="save">Save 4,000</div>
+    </div>
+    <div class="plan" onclick="selectPlan('crash',this)">
+      <div class="price">15,000</div>
+      <div class="name">Crash course</div>
+      <div class="save">One-time</div>
+    </div>
+  </div>
+
+  <button class="btn" id="pay-btn" onclick="requestPayment()">
+    Pay with MTN MoMo
+  </button>
+  <p style="text-align:center;margin-top:12px;font-size:13px;color:#6B7280;">
+    Already subscribed?
+    <a href="dashboard.html" style="color:#1A3A6B;font-weight:500;">Go to materials →</a>
+  </p>
+
+  <div class="status-box" id="status-box"></div>
+
+  <hr class="divider"/>
+
+  <div class="test-note">
+    <strong>Sandbox test number:</strong> Use <strong>46733123453</strong> as the phone number in sandbox mode. This simulates a successful MoMo payment without real money.
+  </div>
+</div>
+
+<script>
+  const BACKEND = "http://localhost:4000";
+  let selectedPlan = "monthly";
+  let userEmail    = "";       // stored here so pollStatus can access it
+  let pollInterval = null;
+
+  function selectPlan(plan, el) {
+    selectedPlan = plan;
+    document.querySelectorAll(".plan").forEach(p => p.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  function showStatus(type, html) {
+    const box = document.getElementById("status-box");
+    box.className = `status-box ${type}`;
+    box.style.display = "block";
+    box.innerHTML = html;
+  }
+
+  async function requestPayment() {
+    const name  = document.getElementById("name").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const btn   = document.getElementById("pay-btn");
+    userEmail   = document.getElementById("email").value.trim(); // saved to outer variable
+
+    if (!name || !userEmail || !phone) {
+      showStatus("error", "Please fill in your name, email, and phone number.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Sending to your phone...";
+    showStatus("pending", '<span class="spinner"></span> Sending payment request to your phone...');
+
+    try {
+      const res  = await fetch(`${BACKEND}/api/pay/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email: userEmail, phone, plan: selectedPlan }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showStatus("pending",
+          '<span class="spinner"></span> <strong>Check your phone!</strong><br>' +
+          'A payment prompt has been sent to <strong>' + phone + '</strong>.<br>' +
+          'Enter your MoMo PIN to complete payment.'
+        );
+        btn.textContent = "Waiting for PIN...";
+        pollStatus(data.referenceId);
+      } else {
+        showStatus("error", "Failed: " + (data.error || "Unknown") + "<br>Detail: " + JSON.stringify(data.detail));
+        resetBtn();
+      }
+    } catch (err) {
+      showStatus("error", "Cannot connect to backend. Is server.js running on port 4000?");
+      resetBtn();
+    }
+  }
+
+  function pollStatus(referenceId) {
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    pollInterval = setInterval(async () => {
+      attempts++;
+      try {
+        // email + plan passed so backend can activate the subscription
+        const res = await fetch(
+          `${BACKEND}/api/pay/status/${referenceId}?email=${encodeURIComponent(userEmail)}&plan=${selectedPlan}`
+        );
+        const data = await res.json();
+
+        if (data.status === "SUCCESSFUL") {
+          clearInterval(pollInterval);
+          showStatus("success",
+            "✅ <strong>Payment successful!</strong><br>" +
+            "Amount: <strong>" + data.amount + " " + data.currency + "</strong><br>" +
+            "Phone: " + data.payer?.partyId + "<br><br>" +
+            "Subscription activated! Check your email for your access link. 🎉"
+          );
+          document.getElementById("pay-btn").textContent = "Payment complete ✅";
+          // redirect to dashboard after 3 seconds
+          setTimeout(() => { window.location.href = "dashboard.html"; }, 3000);
+
+        } else if (data.status === "FAILED") {
+          clearInterval(pollInterval);
+          showStatus("failed", "❌ Payment failed or was rejected. Please try again.");
+          resetBtn();
+
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          showStatus("failed", "⏱ Payment timed out. Please try again.");
+          resetBtn();
+        }
+      } catch (err) {
+        clearInterval(pollInterval);
+        showStatus("error", "Error checking payment status.");
+        resetBtn();
+      }
+    }, 3000);
+  }
+
+  function resetBtn() {
+    const btn = document.getElementById("pay-btn");
+    btn.disabled = false;
+    btn.textContent = "Pay with MTN MoMo";
+  }
+</script>
+</body>
+</html>

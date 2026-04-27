@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeutschMaster — Materials</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --navy: #1A3A6B;
+      --navy-light: #243f70;
+      --gold: #D4A017;
+      --gold-light: #e8b832;
+      --cream: #F8F7F4;
+      --ink: #1C1C1E;
+      --muted: #6B7280;
+      --border: rgba(26,58,107,0.1);
+      --sidebar-w: 260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+    }
+    .sidebar-top {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .logo {
+      font-family: 'Lora', serif;
+      font-size: 20px;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+    .logo span { color: var(--gold); }
+    .user-pill {
+      margin-top: 14px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .user-pill .label { font-size: 10px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.8px; }
+    .user-pill .email { font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 8px;
+      background: rgba(212,160,23,0.15);
+      border: 1px solid rgba(212,160,23,0.3);
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: 11px;
+      color: var(--gold-light);
+    }
+    .sub-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .sidebar-nav {
+      padding: 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nav-section-label {
+      font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase;
+      letter-spacing: 1px; padding: 10px 10px 4px; margin-top: 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      font-size: 13.5px; color: rgba(255,255,255,0.65);
+      cursor: pointer; transition: all 0.15s; text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(212,160,23,0.15); color: var(--gold-light); }
+    .nav-item svg { flex-shrink: 0; }
+    .nav-count {
+      margin-left: auto; background: rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 1px 7px; font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .nav-count.new { background: var(--gold); color: var(--navy); font-weight: 600; }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .sub-expires {
+      font-size: 11px; color: rgba(255,255,255,0.4);
+      padding: 8px 12px; line-height: 1.5;
+    }
+    .sub-expires span { color: rgba(255,255,255,0.7); }
+    .btn-logout {
+      width: 100%; margin-top: 8px;
+      padding: 9px 12px; background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: rgba(255,255,255,0.5);
+      font-size: 13px; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s; text-align: left;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-logout:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); }
+
+    /* ── MAIN ─────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title {
+      font-family: 'Lora', serif;
+      font-size: 18px; color: var(--navy);
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .online-badge {
+      display: flex; align-items: center; gap: 7px;
+      background: #EAF6EF; border: 1px solid rgba(45,122,79,0.2);
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 12px; color: #2D7A4F; font-weight: 500;
+    }
+    .online-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #2D7A4F;
+      animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(0.85); }
+    }
+    .level-filter {
+      display: flex; gap: 6px;
+    }
+    .level-btn {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent; font-size: 12px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .level-btn:hover { border-color: var(--navy); color: var(--navy); }
+    .level-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .level-btn.a1.active { background: #2D7A4F; border-color: #2D7A4F; }
+    .level-btn.b1.active { background: #1A3A6B; border-color: #1A3A6B; }
+    .level-btn.b2.active { background: #6B3A1A; border-color: #6B3A1A; }
+
+    .cat-filter { display: flex; gap: 6px; }
+    .cat-btn {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent; font-size: 12px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .cat-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .cat-btn.active { background: var(--gold); border-color: var(--gold); color: #fff; }
+
+    /* ── FEED ─────────────────────────────────────── */
+    .feed {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      width: 100%;
+    }
+
+    .feed-empty {
+      text-align: center; padding: 80px 20px; color: var(--muted);
+    }
+    .feed-empty svg { opacity: 0.2; margin-bottom: 16px; }
+    .feed-empty p { font-size: 14px; }
+
+    .material-card {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+      animation: slideIn 0.3s ease both;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .material-card:hover { box-shadow: 0 4px 20px rgba(26,58,107,0.08); }
+
+    .card-header {
+      padding: 18px 20px 14px;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .level-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .level-icon.a1 { background: #EAF6EF; color: #2D7A4F; }
+    .level-icon.b1 { background: #EEF3FC; color: #1A3A6B; }
+    .level-icon.b2 { background: #FBF3EA; color: #6B3A1A; }
+
+    .card-meta { flex: 1; min-width: 0; }
+    .card-title { font-size: 15px; font-weight: 500; color: var(--ink); line-height: 1.3; }
+    .card-date { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .card-desc { font-size: 13px; color: #4B5563; margin-top: 4px; line-height: 1.5; }
+
+    .card-body { padding: 0 20px 18px; }
+
+    .pdf-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--cream);
+      border-radius: 10px; padding: 12px 14px;
+      margin-bottom: 8px; text-decoration: none;
+      transition: background 0.15s; cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .pdf-row:hover { background: #eef3fc; border-color: rgba(26,58,107,0.2); }
+    .pdf-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: #fff; border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .pdf-info { flex: 1; min-width: 0; }
+    .pdf-name { font-size: 13px; font-weight: 500; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pdf-size { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .pdf-download {
+      padding: 6px 14px; background: var(--navy);
+      border-radius: 6px; color: #fff; font-size: 12px;
+      font-weight: 500; flex-shrink: 0; transition: opacity 0.15s;
+    }
+    .pdf-row:hover .pdf-download { opacity: 0.85; }
+
+    /* ── EXPIRY WARNING ───────────────────────────── */
+    .expiry-banner {
+      display: none;
+      background: #FEF3C7; border-bottom: 1px solid #F59E0B;
+      padding: 10px 32px; font-size: 13px; color: #92400E;
+      text-align: center;
+    }
+    .expiry-banner a { color: #92400E; font-weight: 600; }
+
+    /* ── SUBSCRIPTION EXPIRED OVERLAY ────────────── */
+    .expired-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(26,58,107,0.95);
+      z-index: 500;
+      align-items: center; justify-content: center; flex-direction: column;
+      text-align: center; padding: 32px;
+    }
+    .expired-overlay.show { display: flex; }
+    .expired-overlay .expired-logo {
+      font-family: 'Lora', serif; font-size: 24px; color: #fff; margin-bottom: 32px;
+    }
+    .expired-overlay .expired-logo span { color: var(--gold); }
+    .expired-overlay h2 { font-family: 'Lora', serif; font-size: 28px; color: #fff; }
+    .expired-overlay p { color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 15px; max-width: 380px; }
+    .btn-renew {
+      margin-top: 28px; padding: 14px 36px;
+      background: var(--gold); color: var(--navy);
+      border: none; border-radius: 10px; font-size: 16px;
+      font-weight: 600; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-renew:hover { opacity: 0.88; }
+
+    /* ── LOADING SCREEN ───────────────────────────── */
+    .loading-screen {
+      position: fixed; inset: 0; background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; z-index: 1000;
+    }
+    .loading-screen .logo { font-family: 'Lora', serif; font-size: 28px; color: var(--navy); }
+    .loading-screen .logo span { color: var(--gold); }
+    .loading-screen .spinner {
+      width: 32px; height: 32px; border: 3px solid rgba(26,58,107,0.15);
+      border-top-color: var(--navy); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-top: 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MOBILE ───────────────────────────────────── */
+    .mobile-header {
+      display: none; background: var(--navy); padding: 14px 20px;
+      position: sticky; top: 0; z-index: 100;
+      align-items: center; justify-content: space-between;
+    }
+    .hamburger { background: none; border: none; cursor: pointer; padding: 4px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .main { margin-left: 0; }
+      .mobile-header { display: flex; }
+      .topbar { display: none; }
+      .feed { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loading-screen">
+  <div class="logo">Deutsch<span>Master</span></div>
+  <div class="spinner"></div>
+</div>
+
+<!-- Expired overlay -->
+<div class="expired-overlay" id="expired-overlay">
+  <div class="expired-logo">Deutsch<span>Master</span></div>
+  <h2>Subscription Ended</h2>
+  <p>Your access has expired. Renew now to continue studying and download materials.</p>
+  <button class="btn-renew" onclick="goToPayment()">Renew Subscription</button>
+</div>
+
+<!-- Mobile header -->
+<div class="mobile-header">
+  <div class="logo" style="font-family:'Lora',serif;font-size:18px;color:#fff;">Deutsch<span style="color:#D4A017;">Master</span></div>
+  <button class="hamburger" onclick="toggleSidebar()">
+    <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">Deutsch<span>Master</span></div>
+    <div class="user-pill">
+      <div class="label">Signed in as</div>
+      <div class="email" id="user-email">loading...</div>
+      <div class="sub-badge"><span class="dot"></span><span id="plan-label">Active</span></div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Materials</div>
+    <a class="nav-item active" onclick="filterLevel('all')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      All materials
+      <span class="nav-count" id="count-all">0</span>
+    </a>
+    <a class="nav-item" onclick="filterLevel('a1')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l4-4 4 4M12 8v8"/></svg>
+      A1 — Beginner
+      <span class="nav-count" id="count-a1">0</span>
+    </a>
+    <a class="nav-item" onclick="filterLevel('b1')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/></svg>
+      B1 — Intermediate
+      <span class="nav-count" id="count-b1">0</span>
+    </a>
+    <a class="nav-item" onclick="filterLevel('b2')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      B2 — Upper Intermediate
+      <span class="nav-count" id="count-b2">0</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sub-expires" id="expiry-text">
+      Subscription expires:<br><span id="expiry-date">—</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </button>
+  </div>
+</aside>
+
+<!-- Main content -->
+<div class="main">
+  <!-- Expiry warning banner -->
+  <div class="expiry-banner" id="expiry-banner">
+    ⚠️ Your subscription expires in <strong id="days-left">7</strong> days.
+    <a href="index.html">Renew now →</a>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-title">Study Materials</div>
+    <div class="topbar-right">
+      <div class="online-badge" id="online-badge">
+        <span class="online-dot"></span>
+        <span id="online-count">—</span> studying now
+      </div>
+      <div class="level-filter">
+        <button class="level-btn active" onclick="filterLevel('all', this)">All</button>
+        <button class="level-btn a1" onclick="filterLevel('a1', this)">A1</button>
+        <button class="level-btn b1" onclick="filterLevel('b1', this)">B1</button>
+        <button class="level-btn b2" onclick="filterLevel('b2', this)">B2</button>
+      </div>
+      <div class="cat-filter">
+        <button class="cat-btn active" onclick="filterCat('all', this)">All types</button>
+        <button class="cat-btn" onclick="filterCat('practice_test', this)">Practice Tests</button>
+        <button class="cat-btn" onclick="filterCat('vocabulary', this)">Vocabulary</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="feed" id="feed">
+    <div class="feed-empty" id="feed-empty" style="display:none;">
+      <svg width="48" height="48" fill="none" stroke="#1A3A6B" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>No materials posted yet.</p>
+    </div>
+    <!-- Cards injected by JS -->
+  </div>
+</div>
+
+
+
+<script>
+// ── SUPABASE CONFIG ──────────────────────────────────────────────
+const SUPABASE_URL = 'https://wfxbwkmvvjriewunovdr.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_31eJMfA-x1NC6lIuYn4_EA_r02ZnTIK';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let allMaterials = [];
+let currentFilter = 'all';
+let currentCategory = 'all';
+
+// ── INIT ─────────────────────────────────────────────────────────
+async function init() {
+  // ── PREVIEW MODE — remove before going live ──────────────────
+  currentUser = { email: 'preview@test.com' };
+  document.getElementById('user-email').textContent = 'preview@test.com';
+  document.getElementById('plan-label').textContent = 'Monthly Plan';
+  document.getElementById('expiry-date').textContent = '27 May 2026';
+  await loadMaterials();
+  document.getElementById('loading-screen').style.display = 'none';
+  return;
+  // ── END PREVIEW MODE ─────────────────────────────────────────
+
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  currentUser = session.user;
+
+  const { data: sub } = await db
+    .from('subscriptions').select('*')
+    .eq('email', currentUser.email).single();
+
+  if (!sub || sub.status !== 'active' || new Date(sub.expires_at) < new Date()) {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('expired-overlay').classList.add('show');
+    return;
+  }
+
+  const daysLeft = Math.ceil((new Date(sub.expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+  if (daysLeft <= 7) {
+    document.getElementById('expiry-banner').style.display = 'block';
+    document.getElementById('days-left').textContent = daysLeft;
+  }
+
+  document.getElementById('user-email').textContent = currentUser.email;
+  document.getElementById('plan-label').textContent =
+    sub.plan === 'quarterly' ? '3-Month Plan' :
+    sub.plan === 'crash'     ? 'Crash Course' : 'Monthly Plan';
+  document.getElementById('expiry-date').textContent =
+    new Date(sub.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  await loadMaterials();
+  document.getElementById('loading-screen').style.display = 'none';
+
+  db.channel('materials')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'materials' }, payload => {
+      allMaterials.unshift(payload.new);
+      renderFeed();
+    })
+    .subscribe();
+}
+
+// ── LOAD MATERIALS ───────────────────────────────────────────────
+async function loadMaterials() {
+  const { data, error } = await db
+    .from('materials')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error(error); return; }
+  allMaterials = data || [];
+  updateCounts();
+  renderFeed();
+}
+
+// ── RENDER FEED ──────────────────────────────────────────────────
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  const empty = document.getElementById('feed-empty');
+
+  // Remove old cards (keep empty div)
+  feed.querySelectorAll('.material-card').forEach(c => c.remove());
+
+  const filtered = allMaterials
+    .filter(m => currentFilter === 'all' || m.level === currentFilter)
+    .filter(m => currentCategory === 'all' || m.category === currentCategory);
+
+  if (filtered.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  filtered.forEach((mat, i) => {
+    const card = document.createElement('div');
+    card.className = 'material-card';
+    card.style.animationDelay = `${i * 0.05}s`;
+
+    const levelLabel = mat.level === 'a1' ? 'A1' : mat.level === 'b1' ? 'B1' : 'B2';
+    const catLabel = mat.category === 'vocabulary' ? 'Vocabulary' : 'Practice Test';
+    const catColor = mat.category === 'vocabulary' ? '#6B3A1A' : '#1A3A6B';
+    const catBg    = mat.category === 'vocabulary' ? '#FBF3EA' : '#EEF3FC';
+    const dateStr = new Date(mat.created_at).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    const pdfsHtml = (mat.files || []).map(f => `
+      <div class="pdf-row" onclick="downloadFile('${f.path}', '${f.name}')">
+        <div class="pdf-icon">
+          <svg width="18" height="18" fill="none" stroke="#1A3A6B" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="pdf-info">
+          <div class="pdf-name">${f.name}</div>
+          <div class="pdf-size">${f.size || 'PDF'}</div>
+        </div>
+        <div class="pdf-download">↓ Download</div>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="level-icon ${mat.level}">${levelLabel}</div>
+        <div class="card-meta">
+          <div class="card-title">${mat.title} <span style="font-size:11px;background:${catBg};color:${catColor};padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:400;">${catLabel}</span></div>
+          <div class="card-date">Posted ${dateStr}</div>
+          ${mat.description ? `<div class="card-desc">${mat.description}</div>` : ''}
+        </div>
+      </div>
+      <div class="card-body">${pdfsHtml}</div>
+    `;
+    feed.appendChild(card);
+  });
+}
+
+// ── FILTER ───────────────────────────────────────────────────────
+function filterCat(cat, btnEl) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  renderFeed();
+}
+
+function filterLevel(level, btnEl) {
+  currentFilter = level;
+
+  // Update topbar buttons
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  // Update sidebar items
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  renderFeed();
+}
+
+function updateCounts() {
+  document.getElementById('count-all').textContent = allMaterials.length;
+  document.getElementById('count-a1').textContent = allMaterials.filter(m => m.level === 'a1').length;
+  document.getElementById('count-b1').textContent = allMaterials.filter(m => m.level === 'b1').length;
+  document.getElementById('count-b2').textContent = allMaterials.filter(m => m.level === 'b2').length;
+}
+
+// ── DOWNLOAD ─────────────────────────────────────────────────────
+async function downloadFile(path, name) {
+  const { data, error } = await db.storage.from('materials').download(path);
+  if (error) { alert('Download failed. Please try again.'); return; }
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────
+async function logout() {
+  await db.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+function goToPayment() {
+  window.location.href = 'index.html';
+}
+
+// ── MOBILE SIDEBAR ───────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+
+// ── FAKE ONLINE COUNTER ──────────────────────────────────────────
+// Drifts slowly between 24–38, changes by 1–2 every 25–35 minutes
+(function() {
+  const MIN = 24, MAX = 38;
+
+  // Seed from date so the number is consistent per day (not random on every refresh)
+  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  function seededRand(s) { return ((s * 9301 + 49297) % 233280) / 233280; }
+  let current = MIN + Math.floor(seededRand(seed) * (MAX - MIN + 1));
+
+  function updateCount() {
+    document.getElementById('online-count').textContent = current;
+  }
+
+  function drift() {
+    const delta = Math.random() < 0.5 ? 1 : 2;
+    const dir   = Math.random() < 0.5 ? 1 : -1;
+    current = Math.min(MAX, Math.max(MIN, current + dir * delta));
+    updateCount();
+    // next change in 25–35 minutes
+    const next = (25 + Math.floor(Math.random() * 10)) * 60 * 1000;
+    setTimeout(drift, next);
+  }
+
+  updateCount();
+  // first drift after 25–35 minutes
+  setTimeout(drift, (25 + Math.floor(Math.random() * 10)) * 60 * 1000);
+})();
+
+// ── START ────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

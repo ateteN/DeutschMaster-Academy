@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeutschMaster — Admin Dashboard</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --navy: #1A3A6B;
+      --navy-dark: #243f70;
+      --gold: #D4A017;
+      --gold-light: #e8b832;
+      --cream: #F8F7F4;
+      --ink: #1C1C1E;
+      --muted: #6B7280;
+      --border: rgba(26,58,107,0.1);
+      --green: #2D7A4F;
+      --red: #C0392B;
+      --sidebar-w: 240px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; display: flex; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w); background: var(--navy-dark);
+      min-height: 100vh; position: fixed; top: 0; left: 0;
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-top { padding: 28px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .logo { font-family: 'Lora', serif; font-size: 20px; color: #fff; }
+    .logo span { color: var(--gold); }
+    .admin-tag {
+      display: inline-block; margin-top: 8px;
+      background: rgba(212,160,23,0.15); border: 1px solid rgba(212,160,23,0.3);
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 10px; color: var(--gold); letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .sidebar-nav { padding: 16px 10px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      font-size: 13.5px; color: rgba(255,255,255,0.55);
+      cursor: pointer; transition: all 0.15s; border: none; background: none;
+      width: 100%; text-align: left; font-family: 'DM Sans', sans-serif;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-item.active { background: rgba(212,160,23,0.12); color: var(--gold-light); }
+    .sidebar-footer { padding: 16px 10px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .btn-logout {
+      width: 100%; padding: 9px 12px; background: transparent;
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      color: rgba(255,255,255,0.4); font-size: 13px;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+      transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-logout:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); }
+
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .topbar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-family: 'Lora', serif; font-size: 18px; color: var(--navy); }
+    .btn-new {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px; background: var(--gold); color: var(--navy-dark);
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-new:hover { opacity: 0.88; }
+
+    /* ── SECTIONS ── */
+    .section { display: none; padding: 32px; }
+    .section.active { display: block; }
+
+    /* ── STATS ROW ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: #fff; border-radius: 12px; border: 1px solid var(--border);
+      padding: 20px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .stat-value { font-size: 28px; font-weight: 600; color: var(--navy); font-family: 'Lora', serif; }
+    .stat-sub { font-size: 12px; color: var(--muted); }
+
+    /* ── MATERIALS FEED ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-header h2 { font-family: 'Lora', serif; font-size: 17px; color: var(--navy); }
+
+    .level-tabs { display: flex; gap: 6px; }
+    .level-tab {
+      padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: transparent; font-size: 12px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .level-tab:hover { border-color: var(--navy); color: var(--navy); }
+    .level-tab.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    .materials-grid { display: flex; flex-direction: column; gap: 12px; }
+
+    .material-row {
+      background: #fff; border-radius: 12px; border: 1px solid var(--border);
+      padding: 16px 20px; display: flex; align-items: center; gap: 16px;
+      transition: box-shadow 0.15s;
+    }
+    .material-row:hover { box-shadow: 0 2px 12px rgba(26,58,107,0.07); }
+    .level-badge {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .level-badge.a1 { background: #EAF6EF; color: #2D7A4F; }
+    .level-badge.b1 { background: #EEF3FC; color: #1A3A6B; }
+    .level-badge.b2 { background: #FBF3EA; color: #6B3A1A; }
+    .material-info { flex: 1; min-width: 0; }
+    .material-title { font-size: 14px; font-weight: 500; color: var(--ink); }
+    .material-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .material-files { font-size: 12px; color: var(--navy); margin-top: 2px; }
+    .btn-delete {
+      padding: 6px 12px; background: transparent;
+      border: 1px solid rgba(192,57,43,0.2); border-radius: 6px;
+      color: var(--red); font-size: 12px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-delete:hover { background: rgba(192,57,43,0.05); border-color: var(--red); }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .empty-state svg { opacity: 0.2; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── SUBSCRIBERS TABLE ── */
+    .table-wrap { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #F9FAFB; }
+    th {
+      padding: 12px 16px; text-align: left;
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      font-weight: 500; border-bottom: 1px solid var(--border);
+    }
+    td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #FAFAFA; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .status-pill.active { background: #EAF6EF; color: var(--green); }
+    .status-pill.expired { background: #FCEBEB; color: var(--red); }
+    .status-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .plan-tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; background: #EEF3FC; color: var(--navy);
+    }
+    .btn-revoke {
+      padding: 5px 10px; background: transparent;
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--muted); font-size: 11px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .btn-revoke:hover { border-color: var(--red); color: var(--red); }
+
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 16px;
+    }
+    .search-bar input {
+      flex: 1; padding: 9px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+      background: #fff; color: var(--ink); outline: none;
+      transition: border 0.15s;
+    }
+    .search-bar input:focus { border-color: var(--navy); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px); z-index: 300;
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 16px; padding: 28px;
+      width: 100%; max-width: 500px; margin: 16px;
+      animation: modalIn 0.2s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+    .modal h2 { font-family: 'Lora', serif; font-size: 20px; color: var(--navy); margin-bottom: 4px; }
+    .modal .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .form-row input,
+    .form-row select,
+    .form-row textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif;
+      background: #FAFAFA; color: var(--ink); outline: none; transition: border 0.15s; resize: vertical;
+    }
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: var(--navy); background: #fff; }
+
+    .drop-zone {
+      border: 2px dashed rgba(26,58,107,0.2); border-radius: 10px;
+      padding: 24px; text-align: center; cursor: pointer;
+      transition: all 0.15s; background: #FAFAFA;
+    }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--navy); background: #EEF3FC; }
+    .drop-zone p { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel {
+      flex: 1; padding: 11px; border: 1.5px solid var(--border);
+      border-radius: 8px; background: transparent; font-size: 14px;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; color: var(--muted);
+      transition: all 0.15s;
+    }
+    .btn-cancel:hover { border-color: var(--navy); color: var(--navy); }
+    .btn-post {
+      flex: 2; padding: 11px; background: var(--navy); color: #fff;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-post:hover { opacity: 0.88; }
+    .btn-post:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .progress-wrap { display: none; margin-top: 10px; }
+    .progress-bg { background: var(--cream); border-radius: 4px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--navy); border-radius: 4px; width: 0; transition: width 0.3s; }
+    .progress-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 999; white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── LOADING ── */
+    .loading-screen {
+      position: fixed; inset: 0; background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; z-index: 1000;
+    }
+    .loading-screen .logo { font-family: 'Lora', serif; font-size: 26px; color: var(--navy); }
+    .loading-screen .logo span { color: var(--gold); }
+    .spinner { width: 28px; height: 28px; border: 3px solid rgba(26,58,107,0.15); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.8s linear infinite; margin-top: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 900px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .section { padding: 20px 16px; }
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .topbar { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-screen" id="loading-screen">
+  <div class="logo">Deutsch<span>Master</span></div>
+  <div class="spinner"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">Deutsch<span>Master</span></div>
+    <div class="admin-tag">Admin</div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" onclick="showSection('materials', this)">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Materials
+    </button>
+    <button class="nav-item" onclick="showSection('subscribers', this)">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Subscribers
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="logout()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </button>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Materials</div>
+    <button class="btn-new" id="btn-new" onclick="openModal()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Post materials
+    </button>
+  </div>
+
+  <!-- ── MATERIALS SECTION ── -->
+  <div class="section active" id="section-materials">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total posts</div>
+        <div class="stat-value" id="stat-posts">—</div>
+        <div class="stat-sub">All levels</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">A1 posts</div>
+        <div class="stat-value" id="stat-a1">—</div>
+        <div class="stat-sub">Beginner</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">B1 posts</div>
+        <div class="stat-value" id="stat-b1">—</div>
+        <div class="stat-sub">Intermediate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">B2 posts</div>
+        <div class="stat-value" id="stat-b2">—</div>
+        <div class="stat-sub">Upper intermediate</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2>Posted materials</h2>
+      <div class="level-tabs">
+        <button class="level-tab active" onclick="filterMaterials('all', this)">All</button>
+        <button class="level-tab" onclick="filterMaterials('a1', this)">A1</button>
+        <button class="level-tab" onclick="filterMaterials('b1', this)">B1</button>
+        <button class="level-tab" onclick="filterMaterials('b2', this)">B2</button>
+      </div>
+    </div>
+
+    <div class="materials-grid" id="materials-grid">
+      <div class="empty-state" id="mat-empty" style="display:none">
+        <svg width="40" height="40" fill="none" stroke="#1A3A6B" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p>No materials posted yet. Click "Post materials" to add your first.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUBSCRIBERS SECTION ── -->
+  <div class="section" id="section-subscribers">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Active subscribers</div>
+        <div class="stat-value" id="stat-active">—</div>
+        <div class="stat-sub">Paying now</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Expired</div>
+        <div class="stat-value" id="stat-expired">—</div>
+        <div class="stat-sub">Need renewal</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Monthly</div>
+        <div class="stat-value" id="stat-monthly">—</div>
+        <div class="stat-sub">8,000 RWF/mo</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total revenue</div>
+        <div class="stat-value" id="stat-revenue">—</div>
+        <div class="stat-sub">RWF collected</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2>All subscribers</h2>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search by email or name..." oninput="filterSubscribers()"/>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Expires</th>
+            <th>Joined</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="subscribers-tbody">
+          <tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:40px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Upload modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2>Post Materials</h2>
+    <p class="modal-sub">Uploaded PDFs will appear instantly in all students' feeds.</p>
+
+    <div class="form-row">
+      <label>Title</label>
+      <input type="text" id="post-title" placeholder="e.g. B1 Grammar Practice — Week 4"/>
+    </div>
+
+    <div class="form-row">
+      <label>Level</label>
+      <select id="post-level">
+        <option value="a1">A1 — Beginner</option>
+        <option value="b1">B1 — Intermediate</option>
+        <option value="b2">B2 — Upper Intermediate</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Category</label>
+      <select id="post-category">
+        <option value="practice_test">Practice Test</option>
+        <option value="vocabulary">Vocabulary</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Description (optional)</label>
+      <textarea id="post-desc" rows="2" placeholder="Quick note for students..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <label>PDF Files</label>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <svg width="26" height="26" fill="none" stroke="#1A3A6B" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:0.35"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p id="drop-label">Drop PDFs here or click to add files</p>
+        <p style="font-size:11px;color:#9CA3AF;margin-top:4px;">Click multiple times to add more files</p>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFiles(this.files)"/>
+
+      <!-- File list -->
+      <div id="file-list" style="display:none;margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bg"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-label" id="progress-label">Uploading...</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-post" id="btn-post" onclick="postMaterial()">Post to students</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL     = 'https://wfxbwkmvvjriewunovdr.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_31eJMfA-x1NC6lIuYn4_EA_r02ZnTIK';
+  const ADMIN_EMAIL      = 'atetenorette23@gmail.com';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let allMaterials    = [];
+  let allSubscribers  = [];
+  let selectedFiles   = [];
+  let matFilter       = 'all';
+
+  // ── INIT ──────────────────────────────────────────────────────
+  async function init() {
+    const { data: { session } } = await db.auth.getSession();
+
+    if (!session || session.user.email !== ADMIN_EMAIL) {
+      window.location.href = 'admin-login.html';
+      return;
+    }
+
+    await Promise.all([loadMaterials(), loadSubscribers()]);
+    document.getElementById('loading-screen').style.display = 'none';
+  }
+
+  // ── SECTIONS ──────────────────────────────────────────────────
+  function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    btn.classList.add('active');
+
+    const titles = { materials: 'Materials', subscribers: 'Subscribers' };
+    document.getElementById('topbar-title').textContent = titles[name];
+
+    const showNew = name === 'materials';
+    document.getElementById('btn-new').style.display = showNew ? 'flex' : 'none';
+  }
+
+  // ── MATERIALS ─────────────────────────────────────────────────
+  async function loadMaterials() {
+    const { data, error } = await db
+      .from('materials')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) { console.error(error); return; }
+    allMaterials = data || [];
+    updateMatStats();
+    renderMaterials();
+  }
+
+  function updateMatStats() {
+    document.getElementById('stat-posts').textContent = allMaterials.length;
+    document.getElementById('stat-a1').textContent = allMaterials.filter(m => m.level === 'a1').length;
+    document.getElementById('stat-b1').textContent = allMaterials.filter(m => m.level === 'b1').length;
+    document.getElementById('stat-b2').textContent = allMaterials.filter(m => m.level === 'b2').length;
+  }
+
+  function filterMaterials(level, btn) {
+    matFilter = level;
+    document.querySelectorAll('.level-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderMaterials();
+  }
+
+  function renderMaterials() {
+    const grid  = document.getElementById('materials-grid');
+    const empty = document.getElementById('mat-empty');
+    grid.querySelectorAll('.material-row').forEach(r => r.remove());
+
+    const filtered = matFilter === 'all' ? allMaterials : allMaterials.filter(m => m.level === matFilter);
+
+    if (filtered.length === 0) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    filtered.forEach(mat => {
+      const row = document.createElement('div');
+      row.className = 'material-row';
+      const levelLabel = mat.level.toUpperCase();
+      const catLabel = mat.category === 'vocabulary' ? 'Vocabulary' : 'Practice Test';
+      const dateStr = new Date(mat.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const fileCount = (mat.files || []).length;
+
+      row.innerHTML = `
+        <div class="level-badge ${mat.level}">${levelLabel}</div>
+        <div class="material-info">
+          <div class="material-title">${mat.title} <span style="font-size:11px;background:#EEF3FC;color:#1A3A6B;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:400;">${catLabel}</span></div>
+          <div class="material-meta">Posted ${dateStr}</div>
+          <div class="material-files">${fileCount} PDF${fileCount !== 1 ? 's' : ''} attached</div>
+        </div>
+        <button class="btn-delete" onclick="deleteMaterial('${mat.id}', this)">Delete</button>
+      `;
+      grid.appendChild(row);
+    });
+  }
+
+  async function deleteMaterial(id, btn) {
+    if (!confirm('Delete this post? Students will no longer see it.')) return;
+    btn.textContent = 'Deleting...';
+    btn.disabled = true;
+
+    const mat = allMaterials.find(m => m.id === id);
+
+    // Delete files from storage
+    if (mat?.files?.length) {
+      const paths = mat.files.map(f => f.path);
+      await db.storage.from('materials').remove(paths);
+    }
+
+    const { error } = await db.from('materials').delete().eq('id', id);
+    if (error) { toast('Delete failed: ' + error.message); btn.textContent = 'Delete'; btn.disabled = false; return; }
+
+    allMaterials = allMaterials.filter(m => m.id !== id);
+    updateMatStats();
+    renderMaterials();
+    toast('Post deleted.');
+  }
+
+  // ── SUBSCRIBERS ───────────────────────────────────────────────
+  async function loadSubscribers() {
+    const { data, error } = await db
+      .from('subscriptions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) { console.error(error); return; }
+    allSubscribers = data || [];
+    updateSubStats();
+    renderSubscribers(allSubscribers);
+  }
+
+  function updateSubStats() {
+    const active  = allSubscribers.filter(s => s.status === 'active' && new Date(s.expires_at) > new Date());
+    const expired = allSubscribers.filter(s => s.status !== 'active' || new Date(s.expires_at) <= new Date());
+    const monthly = allSubscribers.filter(s => s.plan === 'monthly');
+    const revenue = allSubscribers.reduce((sum, s) => sum + (s.amount_rwf || 0), 0);
+
+    document.getElementById('stat-active').textContent  = active.length;
+    document.getElementById('stat-expired').textContent = expired.length;
+    document.getElementById('stat-monthly').textContent = monthly.length;
+    document.getElementById('stat-revenue').textContent = revenue.toLocaleString();
+  }
+
+  function filterSubscribers() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const filtered = allSubscribers.filter(s => s.email.toLowerCase().includes(q));
+    renderSubscribers(filtered);
+  }
+
+  function renderSubscribers(list) {
+    const tbody = document.getElementById('subscribers-tbody');
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:40px;">No subscribers yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(s => {
+      const isActive = s.status === 'active' && new Date(s.expires_at) > new Date();
+      const statusHtml = isActive
+        ? '<span class="status-pill active"><span class="dot"></span>Active</span>'
+        : '<span class="status-pill expired"><span class="dot"></span>Expired</span>';
+      const expiry = new Date(s.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const joined = new Date(s.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const planLabel = s.plan === 'quarterly' ? '3-Month' : s.plan === 'crash' ? 'Crash' : 'Monthly';
+
+      return `<tr>
+        <td>${s.email}</td>
+        <td><span class="plan-tag">${planLabel}</span></td>
+        <td>${statusHtml}</td>
+        <td>${expiry}</td>
+        <td>${joined}</td>
+        <td><button class="btn-revoke" onclick="revokeAccess('${s.id}', '${s.email}')">Revoke</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function revokeAccess(id, email) {
+    if (!confirm(`Revoke access for ${email}?`)) return;
+    const { error } = await db.from('subscriptions').update({ status: 'cancelled' }).eq('id', id);
+    if (error) { toast('Failed: ' + error.message); return; }
+    allSubscribers = allSubscribers.map(s => s.id === id ? { ...s, status: 'cancelled' } : s);
+    updateSubStats();
+    renderSubscribers(allSubscribers);
+    toast(`Access revoked for ${email}`);
+  }
+
+  // ── UPLOAD MODAL ──────────────────────────────────────────────
+  function openModal()  { document.getElementById('modal-overlay').classList.add('open'); }
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    selectedFiles = [];
+    renderFileList();
+    document.getElementById('file-list').style.display = 'none';
+    document.getElementById('progress-wrap').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0';
+    document.getElementById('post-title').value = '';
+    document.getElementById('post-desc').value = '';
+    document.getElementById('btn-post').disabled = false;
+    document.getElementById('btn-post').textContent = 'Post to students';
+  }
+
+  function handleFiles(files) {
+    // Accumulate — don't replace
+    const newFiles = Array.from(files);
+    newFiles.forEach(f => {
+      // Avoid duplicates by name
+      if (!selectedFiles.find(e => e.name === f.name)) {
+        selectedFiles.push(f);
+      }
+    });
+    renderFileList();
+    // Reset input so same file can be re-added if removed
+    document.getElementById('file-input').value = '';
+  }
+
+  function renderFileList() {
+    const list = document.getElementById('file-list');
+    const dropLabel = document.getElementById('drop-label');
+
+    if (selectedFiles.length === 0) {
+      list.style.display = 'none';
+      dropLabel.textContent = 'Drop PDFs here or click to add files';
+      return;
+    }
+
+    dropLabel.textContent = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} added — click to add more`;
+    list.style.display = 'flex';
+    list.innerHTML = selectedFiles.map((f, i) => {
+      const size = f.size > 1024*1024
+        ? (f.size / (1024*1024)).toFixed(1) + ' MB'
+        : Math.round(f.size / 1024) + ' KB';
+      return `
+        <div style="display:flex;align-items:center;gap:10px;background:#F8F7F4;border:1px solid rgba(26,58,107,0.1);border-radius:8px;padding:8px 12px;">
+          <svg width="16" height="16" fill="none" stroke="#1A3A6B" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span style="flex:1;font-size:13px;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</span>
+          <span style="font-size:11px;color:#6B7280;flex-shrink:0;">${size}</span>
+          <button onclick="removeFile(${i})" style="background:none;border:none;cursor:pointer;color:#C0392B;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">×</button>
+        </div>`;
+    }).join('');
+  }
+
+  function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    renderFileList();
+  }
+
+  const dz = document.getElementById('drop-zone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragging'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragging'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragging');
+    handleFiles(e.dataTransfer.files);
+  });
+
+  async function postMaterial() {
+    const title    = document.getElementById('post-title').value.trim();
+    const level    = document.getElementById('post-level').value;
+    const category = document.getElementById('post-category').value;
+    const desc     = document.getElementById('post-desc').value.trim();
+    const btn      = document.getElementById('btn-post');
+
+    if (!title) { toast('Please add a title.'); return; }
+    if (selectedFiles.length === 0) { toast('Please select at least one PDF.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+    document.getElementById('progress-wrap').style.display = 'block';
+
+    const uploadedFiles = [];
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const path = `${level}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+      document.getElementById('progress-fill').style.width = Math.round((i / selectedFiles.length) * 80) + '%';
+      document.getElementById('progress-label').textContent = `Uploading ${file.name}...`;
+
+      const { error } = await db.storage.from('materials').upload(path, file);
+      if (error) { toast('Upload failed: ' + error.message); btn.disabled = false; btn.textContent = 'Post to students'; return; }
+
+      const size = file.size > 1024*1024
+        ? (file.size / (1024*1024)).toFixed(1) + ' MB'
+        : Math.round(file.size / 1024) + ' KB';
+
+      uploadedFiles.push({ name: file.name, path, size });
+    }
+
+    document.getElementById('progress-fill').style.width = '90%';
+    document.getElementById('progress-label').textContent = 'Saving...';
+
+    const { data: newPost, error: dbErr } = await db.from('materials').insert({
+      title, level, category,
+      description: desc || null,
+      files: uploadedFiles,
+      posted_by: ADMIN_EMAIL,
+    }).select().single();
+
+    if (dbErr) { toast('Failed: ' + dbErr.message); btn.disabled = false; btn.textContent = 'Post to students'; return; }
+
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-label').textContent = 'Posted! ✅';
+
+    allMaterials.unshift(newPost);
+    updateMatStats();
+    renderMaterials();
+
+    setTimeout(() => { closeModal(); toast('Materials posted to all students! ✅'); }, 700);
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────────
+  async function logout() {
+    await db.auth.signOut();
+    window.location.href = 'admin-login.html';
+  }
+
+  // ── TOAST ─────────────────────────────────────────────────────
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  init();
+</script>
+</body>
+</html>
